@@ -1,0 +1,71 @@
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const rateLimit = require('express-rate-limit');
+
+dotenv.config();
+
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  JWT_SECRET not set in .env — login/signup will fail until it is configured.');
+}
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+}));
+app.use(express.json({ limit: '10mb' }));
+
+// Rate limit AI routes — they hit the paid Gemini API and are the most abuse-prone
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: 'Too many AI requests, please try again later.' } },
+});
+
+// ── Routes ─────────────────────────────────────────────────────────────────
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/projects', require('./routes/projects'));
+app.use('/api/ai', aiLimiter, require('./routes/ai'));
+app.use('/api/scheduler', require('./routes/scheduler'));
+app.use('/api/analytics', require('./routes/analytics'));
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    dbState: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: { message: `Route ${req.method} ${req.path} not found` } });
+});
+
+// ── Error Handler ─────────────────────────────────────────────────────────
+app.use(require('./middleware/errorHandler'));
+
+// ── Database & Server Start ────────────────────────────────────────────────
+mongoose
+  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/siteguide')
+  .then(() => {
+    console.log('✅ Connected to MongoDB');
+    app.listen(PORT, () => {
+      console.log(`🚀 SiteGuide API running on http://localhost:${PORT}`);
+      console.log(`📋 Health: http://localhost:${PORT}/api/health`);
+    });
+  })
+  .catch((error) => {
+    console.error('❌ MongoDB connection error:', error.message);
+    process.exit(1);
+  });
+
+module.exports = app;
