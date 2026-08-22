@@ -190,5 +190,5 @@ Distributed under the ISC License. See `LICENSE` for more information.
 ## 📞 Contact
 
 **Rishi Singh**
-[GitHub](https://github.com/rishisingh108) · [LinkedIn](https://www.linkedin.com/in/rishi-singh-064419333) · [rishisingh31102004@gmail.com](mailto:rishisingh31102004@gmail.com)
+[GitHub](https://github.com/1BugFairy) · [LinkedIn](www.linkedin.com/in/ishika-tyagi-186469320) · [rishisingh31102004@gmail.com](mailto:ishikat334@gmail.com)
 
